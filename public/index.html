@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Scanii Auth Token Sample</title>
+
+    <!--Some styles because we are not savages-->
+    <style>
+        body {
+            text-align: center;
+            font-family: Georgia,serif;
+            font-size: 1em;
+        }
+
+
+    </style>
+</head>
+<body>
+<h1><a href="https://scanii.com">Scanii</a> Client Side Arbitration Sample</h1>
+<p>
+    This example demonstrates how to arbitrate content in the browser before submitting it to your servers.
+</p>
+<form id="app-login" method="post" action="/process">
+    <fieldset>
+        <legend>Upload a file</legend>
+        <div>
+            <label for="file">Select file</label>
+
+            <input id="file" name="file" type="file" required autofocus>
+        </div>
+        <div>
+            <input name="Upload" type="submit" value="Upload">
+        </div>
+    </fieldset>
+</form>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "scanii-token-sample",
+  "version": "0.0.1",
+  "description": "Scanii auth token sample",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "DEBUG=express:* node app.js"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "express": "^4.16.2",
+    "request": "^2.83.0"
+  }
+}
