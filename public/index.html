@@ -3,35 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <title>Scanii Auth Token Sample</title>
-
-    <!--Some styles because we are not savages-->
     <style>
-        body {
-            text-align: center;
-            font-family: Georgia,serif;
-            font-size: 1em;
+        samp, pre, code {
+            font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
         }
-
-
     </style>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.0/css/bulma.min.css">
+
+    <script>
+
+        processForm = (form) => {
+            const pacer = document.getElementById('pacer');
+
+            new Promise((resolve, reject) => {
+                console.log("step 1 - acquire one-time authentication token...");
+
+                form.style.display = 'none';
+                pacer.children[0].textContent = 'Processing....';
+                pacer.style.display = '';
+                pacer.children[0].textContent = 'Acquiring token....';
+
+                const request = new XMLHttpRequest();
+                request.open('GET', '/auth-token.json', true);
+                request.onload = () => {
+                    console.log(request.status);
+                    if (request.status === 200) {
+                        const token = JSON.parse(request.responseText);
+                        resolve(token);
+                    } else {
+                        reject(request.responseText);
+                    }
+                };
+
+                request.onerror = () => {
+                    reject(request.responseText);
+
+                };
+                request.send();
+            }).then(token => {
+                return new Promise((resolve, reject) => {
+                    console.log("step 2 - use token to submit content for processing...");
+                    console.log('using token:', token.id);
+                    pacer.children[0].textContent = 'Analyzing content....';
+
+
+                    const credentials = btoa(token.id + ':');
+                    const formData = new FormData();
+                    formData.append("file", document.getElementById("file").files[0]);
+                    formData.append("timeout", 30 * 60);
+
+                    const request = new XMLHttpRequest();
+                    request.open('POST', 'https://api.scanii.com/v2.1/files', true);
+
+                    request.setRequestHeader('Authorization', 'Basic ' + credentials);
+
+                    request.onload = () => {
+                        console.log(request.status);
+                        if (request.status === 201) {
+                            console.log(request.responseText);
+                            resolve(JSON.parse(request.responseText))
+                        } else {
+                            reject(request.responseText);
+                        }
+                    };
+
+                    request.onerror = () => {
+                        reject(request.responseText);
+
+                    };
+
+                    request.send(formData);
+
+                }).then(result => {
+                    console.log("step 3 - update page with result...");
+                    console.log('using result:', result.findings);
+
+                    if (result.findings.length > 0) {
+                        pacer.children[0].textContent = `Content denied, reason:`;
+                        const findingsElement = document.createElement('pre');
+                        findingsElement.textContent = result.findings;
+                        pacer.appendChild(findingsElement);
+                    } else {
+                        pacer.children[0].textContent = 'Content clean, uploading to server...';
+
+                        // before submitting we append the file id to the form for server-side validation:
+                        document.getElementById("fileId").setAttribute('value', result.id);
+                        form.submit();
+                    }
+
+                });
+            });
+
+            return false;
+
+        };
+
+    </script>
 </head>
 <body>
-<h1><a href="https://scanii.com">Scanii</a> Client Side Arbitration Sample</h1>
-<p>
-    This example demonstrates how to arbitrate content in the browser before submitting it to your servers.
-</p>
-<form id="app-login" method="post" action="/process">
-    <fieldset>
-        <legend>Upload a file</legend>
-        <div>
-            <label for="file">Select file</label>
+<section class="hero is-info is-bold">
+    <div class="hero-body">
+        <div class="container">
+            <h1 class="title">
+                Scanii Client Side Arbitration Sample
+            </h1>
+            <h2 class="subtitle">
+                <strong><a href="https://scanii.com">https://scanii.com</a></strong>
+            </h2>
+        </div>
 
-            <input id="file" name="file" type="file" required autofocus>
+    </div>
+</section>
+<section class="section">
+    <div class="columns">
+        <div class="column"></div>
+        <div class="column">
+            <div class="box">
+                <div id="pacer" style="display: none">
+                    <span></span>
+                </div>
+                <form id="app-login" method="post" action="/process" onsubmit="return processForm(this);">
+                    <p>Let's start by selecting a file to process</p>
+                    <input id="fileId" type="hidden" name="fileId">
+
+                    <div class="field">
+                        <div class="file is-boxed is-success has-name">
+                            <label class="file-label">
+                                <input class="file-input" type="file" id="file" name="file">
+                                <span class="file-cta">
+                            <span class="file-icon">
+                              <i class="fa fa-upload"></i>
+                            </span>
+                            <span class="file-label">
+                              Upload file
+                            </span>
+                          </span><span id="file-name"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field is-grouped ">
+                        <div class="control">
+                            <button class="button is-primary">Submit</button>
+                        </div>
+                        <div class="control">
+                            <button class="button is-text">Cancel</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
         </div>
-        <div>
-            <input name="Upload" type="submit" value="Upload">
-        </div>
-    </fieldset>
-</form>
+        <div class="column"></div>
+
+    </div>
+</section>
+<script>
+    const file = document.getElementById("file");
+    file.onchange = function () {
+        if (file.files.length > 0) {
+            document.getElementById('file-name').innerHTML = file.files[0].name;
+        }
+    };
+</script>
+
 </body>
 </html>
