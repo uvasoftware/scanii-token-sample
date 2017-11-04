@@ -1,5 +1,6 @@
-# scanii-token sample
+# Scanii Client Side Arbitration Sample
 
+## Running ths sample project
 ```
 $ npm install 
 $ npm start
