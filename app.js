@@ -8,7 +8,7 @@ const SCANII_CREDS = process.env.SCANII_CREDS || 'KEY:SECRET';
 
 // bootstrapping an express application:
 const app = express();
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // initial / route handler:
 app.get('/', function (req, res) {
@@ -34,8 +34,7 @@ app.get('/auth-token.json', (req, res) => {
   };
 
   request(options, (error, response, body) => {
-    'use strict';
-    assert(error !== undefined, 'error response from server!');
+
 
     if (response.statusCode === 201) {
       let token = JSON.parse(body);
@@ -43,11 +42,13 @@ app.get('/auth-token.json', (req, res) => {
       res.json(token);
     }
 
-    console.error(`error response from server while creating token`);
-    console.error(`http status: ${response.statusCode} message: ${body}`);
-    res.status(500).end();
-
+    else  {
+      console.error(`error response from server while creating token`);
+      console.error(`http status: ${response.statusCode} message: ${body}`);
+      res.status(500).end();
+    }
   })
+
 
 });
 
