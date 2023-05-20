@@ -7,7 +7,7 @@ const multer = require('multer')
 const fs = require('fs');
 
 // update with your scanii.com API credentials in $KEY:$SECRET format:
-const SCANII_CREDS = process.env.SCANII_CREDS || '3e428dd373aaaa1ee241a1e81a234626:85f0568ec';
+const SCANII_CREDS = process.env.SCANII_CREDS || 'KEY:SECRET';
 
 // bootstrapping an express application:
 const app = express();
@@ -61,7 +61,6 @@ app.post('/process', upload.single('file'), (req, res) => {
   console.log('ensuring file has been properly processed by looking it up by the file id');
   const fileId = req.body.fileId || res.status(400).send('content does not appear to have been client-side processed');
   const uploadedFile = req.file || res.status(400).send('content does not appear to have been client-side processed');
-  console.log(`variable value: ${uploadedFile}`);
 
 
   // now that we have the file id, we look it up in scanii to ensure no findings

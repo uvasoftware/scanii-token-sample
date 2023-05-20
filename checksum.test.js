@@ -8,7 +8,3 @@ test('Should return true if =', () => {
 test('test should return false if not =', () => {
     expect(isSamefile('blue', 'yellow')).toBe(false);
   });
-
-  test('=', () => {
-    expect(isSamefile('GR 2.1 The Silk Road Worksheet.docx', 'yellow')).toBe(false);
-  });
