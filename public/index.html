@@ -129,7 +129,7 @@
         <p>Let's start by selecting a file to process:</p>
 
         <div class="box">
-          <form id="app-login" method="post" action="/process" onsubmit="return processForm(this);">
+          <form id="app-login" method="post" action="/process" enctype="multipart/form-data" onsubmit="return processForm(this);">
             <input id="fileId" type="hidden" name="fileId">
 
             <div class="field">

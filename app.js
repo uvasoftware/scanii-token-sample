@@ -2,13 +2,17 @@ const express = require('express');
 const request = require('request');
 const assert = require('assert');
 const bodyParser = require('body-parser');
+const crypto = require('crypto')
+const multer = require('multer')
+const fs = require('fs');
 
 // update with your scanii.com API credentials in $KEY:$SECRET format:
-const SCANII_CREDS = process.env.SCANII_CREDS || 'KEY:SECRET';
+const SCANII_CREDS = process.env.SCANII_CREDS || '3e428dd373aaaa1ee241a1e81a234626:85f0568ec';
 
 // bootstrapping an express application:
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
+const upload = multer({ dest: './public/data/uploads/' })
 
 // initial / route handler:
 app.get('/', function (req, res) {
@@ -42,7 +46,7 @@ app.get('/auth-token.json', (req, res) => {
       res.json(token);
     }
 
-    else  {
+    else {
       console.error(`error response from server while creating token`);
       console.error(`http status: ${response.statusCode} message: ${body}`);
       res.status(500).end();
@@ -53,9 +57,12 @@ app.get('/auth-token.json', (req, res) => {
 });
 
 // handles the final post
-app.post('/process', (req, res) => {
+app.post('/process', upload.single('file'), (req, res) => {
   console.log('ensuring file has been properly processed by looking it up by the file id');
   const fileId = req.body.fileId || res.status(400).send('content does not appear to have been client-side processed');
+  const uploadedFile = req.file || res.status(400).send('content does not appear to have been client-side processed');
+  console.log(`variable value: ${uploadedFile}`);
+
 
   // now that we have the file id, we look it up in scanii to ensure no findings
   // https://docs.scanii.com/v2.1/resources.html
@@ -69,7 +76,6 @@ app.post('/process', (req, res) => {
   };
 
   request(options, (error, response, body) => {
-    'use strict';
     assert(error !== undefined, 'error response from server!');
 
     if (response.statusCode === 200) {
@@ -79,15 +85,28 @@ app.post('/process', (req, res) => {
       // ensure that there were no findings
       if (result.findings.length > 0) {
         res.status(400).send('content submitted to server but with findings hence it cannot be accepted');
+        return
+      }
+      const data = fs.readFileSync(uploadedFile.path);
+      var shasum = crypto.createHash('sha1')
+      shasum.update(data)
+      let calculatedChecksum = shasum.digest('hex');
+
+      // ensure that checksums match
+      if (result.Berchecksum !== calculatedChecksum) {
+        res.status(400).send('Checksums do not match');
+        return
       }
 
       // good news! If we got this far, it's safe to store the content on the server:
       res.redirect('/success.html');
     }
 
-    console.error(`error response from server while looking up processing result`);
-    console.error(`http status: ${response.statusCode} message: ${body}`);
-    res.status(500).end();
+    else {
+      console.error(`error response from server while creating token`);
+      console.error(`http status: ${response.statusCode} message: ${body}`);
+      res.status(500).end();
+    }
 
   });
 });
