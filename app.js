@@ -92,7 +92,7 @@ app.post('/process', upload.single('file'), (req, res) => {
       let calculatedChecksum = shasum.digest('hex');
 
       // ensure that checksums match
-      if (result.Berchecksum !== calculatedChecksum) {
+      if (result.checksum !== calculatedChecksum) {
         res.status(400).send('Checksums do not match');
         return
       }
