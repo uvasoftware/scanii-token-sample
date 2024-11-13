@@ -10,9 +10,9 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "body-parser": "^1.18.2",
-    "express": "^4.17.3",
-    "multer": "^1.4.5-lts.1",
+    "body-parser": "1.20.3",
+    "express": "5.0.1",
+    "multer": "1.4.5-lts.1",
     "request": "^2.88.2"
   },
   "devDependencies": {
