@@ -8,5 +8,5 @@ For details on how this works go here: https://docs.scanii.com/article/153-clien
 ## Running this sample project
 ```
 $ npm install 
-$ npm start
+$ SCANII_CREDS=CHANGE:ME npm start
 ```
