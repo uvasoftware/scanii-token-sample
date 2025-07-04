@@ -16,11 +16,11 @@
 
   <script>
 
-    processForm = (form) => {
+    processForm = async (form) => {
       const pacer = document.getElementById('pacer');
       const main = document.getElementById('main');
 
-      new Promise((resolve, reject) => {
+      try {
         console.log("step 1 - acquire one-time authentication token...");
 
         main.style.display = 'none';
@@ -28,78 +28,60 @@
         pacer.style.display = '';
         pacer.children[0].textContent = 'Acquiring token....';
 
-        const request = new XMLHttpRequest();
-        request.open('GET', '/auth-token.json', true);
-        request.onload = () => {
-          console.log(request.status);
-          if (request.status === 200) {
-            const token = JSON.parse(request.responseText);
-            resolve(token);
-          } else {
-            reject(request.responseText);
-          }
-        };
+        // Step 1: Get authentication token
+        const tokenResponse = await fetch('/auth-token.json');
+        
+        if (!tokenResponse.ok) {
+          throw new Error(`Token request failed: ${tokenResponse.status} ${tokenResponse.statusText}`);
+        }
+        
+        const token = await tokenResponse.json();
 
-        request.onerror = () => {
-          reject(request.responseText);
+        console.log("step 2 - use token to submit content for processing...");
+        console.log('using token:', token.id);
+        pacer.children[0].textContent = 'Analyzing content....';
 
-        };
-        request.send();
-      }).then(token => {
-        return new Promise((resolve, reject) => {
-          console.log("step 2 - use token to submit content for processing...");
-          console.log('using token:', token.id);
-          pacer.children[0].textContent = 'Analyzing content....';
+        // Step 2: Submit content for processing
+        const credentials = btoa(token.id + ':');
+        const formData = new FormData();
+        formData.append("file", document.getElementById("file").files[0]);
 
-
-          const credentials = btoa(token.id + ':');
-          const formData = new FormData();
-          formData.append("file", document.getElementById("file").files[0]);
-
-          const request = new XMLHttpRequest();
-          request.open('POST', 'https://api.scanii.com/v2.1/files', true);
-
-          request.setRequestHeader('Authorization', 'Basic ' + credentials);
-
-          request.onload = () => {
-            console.log(request.status);
-            if (request.status === 201) {
-              console.log(request.responseText);
-              resolve(JSON.parse(request.responseText))
-            } else {
-              reject(request.responseText);
-            }
-          };
-
-          request.onerror = () => {
-            reject(request.responseText);
-
-          };
-
-          request.send(formData);
-
-        }).then(result => {
-          console.log("step 3 - process content analysis result...");
-          console.log('using result:', result.findings);
-
-          if (result.findings.length > 0) {
-            pacer.children[0].textContent = `Content denied, reason:`;
-            const findingsElement = document.createElement('pre');
-            findingsElement.textContent = result.findings;
-            pacer.appendChild(findingsElement);
-          } else {
-            pacer.children[0].textContent = 'Content clean, uploading to server...';
-
-            // before submitting we append the file id to the form for server-side validation:
-            document.getElementById("fileId").setAttribute('value', result.id);
-            form.submit();
-          }
-
+        const analysisResponse = await fetch('https://api.scanii.com/v2.1/files', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Basic ' + credentials
+          },
+          body: formData
         });
-      });
+
+        if (!analysisResponse.ok) {
+          throw new Error(`Analysis request failed: ${analysisResponse.status} ${analysisResponse.statusText}`);
+        }
+
+        const result = await analysisResponse.json();
+
+        console.log("step 3 - process content analysis result...");
+        console.log('using result:', result.findings);
+
+        if (result.findings.length > 0) {
+          pacer.children[0].textContent = `Content denied, reason:`;
+          const findingsElement = document.createElement('pre');
+          findingsElement.textContent = result.findings;
+          pacer.appendChild(findingsElement);
+        } else {
+          pacer.children[0].textContent = 'Content clean, uploading to server...';
+
+          // before submitting we append the file id to the form for server-side validation:
+          document.getElementById("fileId").setAttribute('value', result.id);
+          form.submit();
+        }
+
+      } catch (error) {
+        console.error('Error processing form:', error);
+        pacer.children[0].textContent = 'Error occurred during processing. Please try again.';
+      }
 
       return false;
-
     };
 
   </script>
