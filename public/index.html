@@ -46,7 +46,7 @@
         const formData = new FormData();
         formData.append("file", document.getElementById("file").files[0]);
 
-        const analysisResponse = await fetch('https://api.scanii.com/v2.1/files', {
+        const analysisResponse = await fetch('https://api.scanii.com/v2.2/files', {
           method: 'POST',
           headers: {
             'Authorization': 'Basic ' + credentials

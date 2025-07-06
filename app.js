@@ -65,7 +65,7 @@ app.post('/process', upload.single('file'), async (req, res) => {
     // https://docs.scanii.com/v2.1/resources.html
     const credentials = Buffer.from(`${SCANII_CREDS.split(':')[0]}:${SCANII_CREDS.split(':')[1]}`).toString('base64');
     
-    const response = await fetch(`https://api.scanii.com/v2.1/files/${fileId}`, {
+    const response = await fetch(`https://api.scanii.com/v2.2/files/${fileId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Basic ${credentials}`
