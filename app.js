@@ -24,10 +24,10 @@ app.get('/auth-token.json', async (req, res) => {
   console.log('creating new temp auth token');
 
   try {
-    //more information at https://docs.scanii.com/v2.1/resources.html
+    //more information at https://docs.scanii.com/v2.2/resources.html
     const credentials = Buffer.from(`${SCANII_CREDS.split(':')[0]}:${SCANII_CREDS.split(':')[1]}`).toString('base64');
     
-    const response = await fetch('https://api.scanii.com/v2.1/auth/tokens', {
+    const response = await fetch('https://api.scanii.com/v2.2/auth/tokens', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${credentials}`,
@@ -62,7 +62,7 @@ app.post('/process', upload.single('file'), async (req, res) => {
 
   try {
     // now that we have the file id, we look it up in scanii to ensure no findings
-    // https://docs.scanii.com/v2.1/resources.html
+    // https://docs.scanii.com/v2.2/resources.html
     const credentials = Buffer.from(`${SCANII_CREDS.split(':')[0]}:${SCANII_CREDS.split(':')[1]}`).toString('base64');
     
     const response = await fetch(`https://api.scanii.com/v2.2/files/${fileId}`, {
