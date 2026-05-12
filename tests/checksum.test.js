@@ -1,4 +1,4 @@
-const isSamefile = require('./checksum');
+const isSamefile = require('../checksum');
 
 test('Should return true if =', () => {
   expect(isSamefile('blue', 'blue')).toBe(true);

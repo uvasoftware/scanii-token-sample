@@ -5,6 +5,7 @@
   "main": "app.js",
   "scripts": {
     "test": "jest",
+    "test:e2e": "playwright test",
     "start": "node app.js"
   },
   "author": "",
@@ -19,6 +20,12 @@
     "multer": "^2.1.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "jest": "^30.0.4"
+  },
+  "jest": {
+    "testMatch": [
+      "<rootDir>/tests/**/*.test.js"
+    ]
   }
 }

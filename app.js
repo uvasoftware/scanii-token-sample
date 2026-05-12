@@ -85,6 +85,7 @@ app.post('/process', upload.single('file'), async (req, res) => {
 app.use(express.static('public'));
 
 // finally, starting the server listener handler:
-app.listen(3000, () => {
-  console.log('Now go to http://localhost:3000');
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Now go to http://localhost:${port}`);
 });

@@ -44,6 +44,27 @@ Then open <http://localhost:3000>.
 The same endpoint is returned to the browser so the direct-to-Scanii upload
 lands in the same region as the token.
 
+## Testing
+
+Unit tests run on every push:
+
+```bash
+npm test
+```
+
+The Playwright end-to-end suite drives a real browser through the full flow
+against [scanii-cli](https://github.com/scanii/scanii-cli) — no Scanii
+credentials needed.
+
+```bash
+docker run -d --name scanii-cli -p 4000:4000 \
+  ghcr.io/scanii/scanii-cli:latest server -a 0.0.0.0:4000
+npm run test:e2e
+```
+
+The e2e suite self-skips when scanii-cli is not reachable, so it is safe to
+run unconditionally.
+
 ## License
 
 Apache-2.0.
