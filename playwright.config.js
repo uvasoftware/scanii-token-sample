@@ -8,7 +8,6 @@ const PORT = process.env.PORT || '3100';
 
 module.exports = defineConfig({
   testDir: './tests',
-  testMatch: '**/*.spec.js',
   fullyParallel: false,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
