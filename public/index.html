@@ -38,15 +38,16 @@
         const token = await tokenResponse.json();
 
         console.log("step 2 - use token to submit content for processing...");
-        console.log('using token:', token.id);
+        console.log('using token:', token.id, 'endpoint:', token.endpoint);
         pacer.children[0].textContent = 'Analyzing content....';
 
-        // Step 2: Submit content for processing
+        // Step 2: Submit content for processing — use the same regional endpoint
+        // the server used to mint the token.
         const credentials = btoa(token.id + ':');
         const formData = new FormData();
         formData.append("file", document.getElementById("file").files[0]);
 
-        const analysisResponse = await fetch('https://api.scanii.com/v2.2/files', {
+        const analysisResponse = await fetch(token.endpoint + '/v2.2/files', {
           method: 'POST',
           headers: {
             'Authorization': 'Basic ' + credentials
@@ -111,7 +112,7 @@
         <p>Let's start by selecting a file to process:</p>
 
         <div class="box">
-          <form id="app-login" method="post" action="/process" enctype="multipart/form-data" onsubmit="return processForm(this);">
+          <form id="app-login" method="post" action="/process" enctype="multipart/form-data" onsubmit="event.preventDefault(); processForm(this);">
             <input id="fileId" type="hidden" name="fileId">
 
             <div class="field">

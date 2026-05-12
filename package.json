@@ -1,20 +1,24 @@
 {
   "name": "scanii-token-sample",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Scanii auth token sample",
   "main": "app.js",
   "scripts": {
-    "test": "jest",
+    "test": "playwright test",
     "start": "node app.js"
   },
   "author": "",
   "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
+    "@scanii/core": "^1.4.0",
     "body-parser": "2.2.1",
-    "express": "5.1.0",
-    "multer": "2.1.0"
+    "express": "^5.2.1",
+    "multer": "^2.1.1"
   },
   "devDependencies": {
-    "jest": "^30.0.4"
+    "@playwright/test": "^1.60.0"
   }
 }

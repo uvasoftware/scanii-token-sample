@@ -1,17 +1,24 @@
 const express = require('express');
-const assert = require('assert');
 const bodyParser = require('body-parser');
-const crypto = require('crypto')
-const multer = require('multer')
+const crypto = require('crypto');
+const multer = require('multer');
 const fs = require('fs');
+const { ScaniiClient, ScaniiTarget, ScaniiAuthError, ScaniiError } = require('@scanii/core');
 
-// update with your scanii.com API credentials in $KEY:$SECRET format:
-const SCANII_CREDS = process.env.SCANII_CREDS || 'KEY:SECRET';
+// Scanii API credentials in $KEY:$SECRET format. Get yours at https://scanii.com.
+const [key, secret] = (process.env.SCANII_CREDS || 'KEY:SECRET').split(':');
+
+// Regional endpoint the server uses to talk to Scanii. The same endpoint is sent
+// to the browser so the direct-to-Scanii upload lands in the same region as the
+// token. Override with SCANII_ENDPOINT (e.g. to point at scanii-cli locally).
+const endpoint = process.env.SCANII_ENDPOINT || ScaniiTarget.US1;
+
+const scanii = new ScaniiClient({ key, secret, endpoint });
 
 // bootstrapping an express application:
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
-const upload = multer({ dest: './public/data/uploads/' })
+const upload = multer({ dest: './public/data/uploads/' });
 
 // initial / route handler:
 app.get('/', function (req, res) {
@@ -20,89 +27,56 @@ app.get('/', function (req, res) {
 
 // creates an authentication token
 app.get('/auth-token.json', async (req, res) => {
-
   console.log('creating new temp auth token');
-
   try {
-    //more information at https://docs.scanii.com/v2.2/resources.html
-    const credentials = Buffer.from(`${SCANII_CREDS.split(':')[0]}:${SCANII_CREDS.split(':')[1]}`).toString('base64');
-    
-    const response = await fetch('https://api.scanii.com/v2.2/auth/tokens', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        timeout: '300'
-      })
-    });
-
-    if (response.status === 201) {
-      const token = await response.json();
-      console.log(`token created successfully with id:${token.id} and expiration: ${token.expiration_date}`);
-      res.json(token);
-    } else {
-      const body = await response.text();
-      console.error(`error response from server while creating token`);
-      console.error(`http status: ${response.status} message: ${body}`);
-      res.status(500).end();
-    }
+    const token = await scanii.createAuthToken(300);
+    console.log(`token created successfully with id:${token.id} and expiration: ${token.expirationDate}`);
+    // The browser needs the endpoint too so its direct-to-Scanii upload hits the
+    // same region the token was minted against.
+    res.json({ id: token.id, expirationDate: token.expirationDate, endpoint });
   } catch (error) {
     console.error('Error creating token:', error);
-    res.status(500).end();
+    res.status(error instanceof ScaniiAuthError ? 401 : 500).end();
   }
 });
 
 // handles the final post
 app.post('/process', upload.single('file'), async (req, res) => {
   console.log('ensuring file has been properly processed by looking it up by the file id');
-  const fileId = req.body.fileId || res.status(400).send('content does not appear to have been client-side processed');
-  const uploadedFile = req.file || res.status(400).send('content does not appear to have been client-side processed');
+  const fileId = req.body.fileId;
+  const uploadedFile = req.file;
+  if (!fileId || !uploadedFile) {
+    res.status(400).send('content does not appear to have been client-side processed');
+    return;
+  }
 
   try {
-    // now that we have the file id, we look it up in scanii to ensure no findings
-    // https://docs.scanii.com/v2.2/resources.html
-    const credentials = Buffer.from(`${SCANII_CREDS.split(':')[0]}:${SCANII_CREDS.split(':')[1]}`).toString('base64');
-    
-    const response = await fetch(`https://api.scanii.com/v2.2/files/${fileId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Basic ${credentials}`
-      }
-    });
+    const result = await scanii.retrieve(fileId);
+    console.log(`file processing result: ${result.id}`);
 
-    if (response.status === 200) {
-      const result = await response.json();
-      console.log(`file processing result: ${result.id}`);
-
-      // ensure that there were no findings
-      if (result.findings.length > 0) {
-        res.status(400).send('content submitted to server but with findings hence it cannot be accepted');
-        return;
-      }
-      
-      const data = fs.readFileSync(uploadedFile.path);
-      var shasum = crypto.createHash('sha1')
-      shasum.update(data)
-      let calculatedChecksum = shasum.digest('hex');
-
-      // ensure that checksums match
-      if (result.checksum !== calculatedChecksum) {
-        res.status(400).send('Checksums do not match');
-        return;
-      }
-
-      // good news! If we got this far, it's safe to store the content on the server:
-      res.redirect('/success.html');
-    } else {
-      const body = await response.text();
-      console.error(`error response from server while creating token`);
-      console.error(`http status: ${response.status} message: ${body}`);
-      res.status(500).end();
+    // ensure that there were no findings
+    if (result.findings.length > 0) {
+      res.status(400).send('content submitted to server but with findings hence it cannot be accepted');
+      return;
     }
+
+    const data = fs.readFileSync(uploadedFile.path);
+    const calculatedChecksum = crypto.createHash('sha1').update(data).digest('hex');
+
+    // ensure that checksums match
+    if (result.checksum !== calculatedChecksum) {
+      res.status(400).send('Checksums do not match');
+      return;
+    }
+
+    // good news! If we got this far, it's safe to store the content on the server:
+    res.redirect('/success.html');
   } catch (error) {
-    console.error('Error processing file:', error);
+    if (error instanceof ScaniiError) {
+      console.error(`error retrieving result: http ${error.statusCode} ${error.message}`);
+    } else {
+      console.error('Error processing file:', error);
+    }
     res.status(500).end();
   }
 });
@@ -111,6 +85,7 @@ app.post('/process', upload.single('file'), async (req, res) => {
 app.use(express.static('public'));
 
 // finally, starting the server listener handler:
-app.listen(3000, () => {
-  console.log('Now go to http://localhost:3000');
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Now go to http://localhost:${port}`);
 });
